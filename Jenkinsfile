@@ -2,7 +2,7 @@ pipeline {
   agent any
 
   environment {
-    DOCKER_IMAGE = 'andermonsal/spring-petclinic'
+    DOCKER_IMAGE = 'amonsalve763/spring-petclinic'
     DOCKER_TAG   = 'latest'
   }
 
@@ -19,7 +19,7 @@ pipeline {
       agent {
         docker {
           image 'maven:3.9.6-eclipse-temurin-17'
-          args  '--entrypoint="" -v $HOME/.m2:/root/.m2'
+          args  '-v $HOME/.m2:/root/.m2 --entrypoint=""'
         }
       }
       steps {
@@ -30,15 +30,19 @@ pipeline {
     stage('Docker Build') {
       agent any
       steps {
-        sh 'docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} .'
+        sh '''
+          docker build \
+            -t ${DOCKER_IMAGE}:${DOCKER_TAG} \
+            .
+        '''
       }
     }
 
     stage('Docker Push') {
-      agent any
+      when { branch 'main' }
       steps {
         withCredentials([usernamePassword(
-          credentialsId: 'docker_hub_credentials',
+          credentialsId: 'docker-hub-creds',
           usernameVariable: 'DOCKER_USER',
           passwordVariable: 'DOCKER_PASS'
         )]) {
@@ -53,7 +57,8 @@ pipeline {
 
   post {
     always {
-      echo 'Pipeline completado – limpieza de workspace'
+      echo "Pipeline completado - Limpieza de workspace"
     }
   }
 }
+
